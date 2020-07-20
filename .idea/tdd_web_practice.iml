@@ -4,11 +4,11 @@
     <facet type="django" name="Django">
       <configuration>
         <option name="rootFolder" value="$MODULE_DIR$" />
-        <option name="settingsModule" value="tdd_web_practice/settings.py" />
-        <option name="manageScript" value="$MODULE_DIR$/manage.py" />
+        <option name="settingsModule" value="" />
+        <option name="manageScript" value="manage.py" />
         <option name="environment" value="&lt;map/&gt;" />
         <option name="doNotUseTestRunner" value="false" />
-        <option name="trackFilePattern" value="migrations" />
+        <option name="trackFilePattern" value="" />
       </configuration>
     </facet>
   </component>
