@@ -4,7 +4,9 @@
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
+      <env name="PYTHONUNBUFFERED" value="1" />
       <env name="DJANGO_SETTINGS_MODULE" value="superlists.settings" />
+      <env name="EMAIL_PASSWORD" value="passpruebatdd" />
     </envs>
     <option name="SDK_HOME" value="$USER_HOME$/anaconda3/envs/tdd_web_practice/bin/python" />
     <option name="WORKING_DIRECTORY" value="" />

@@ -24,9 +24,26 @@ else:
     SECRET_KEY = 'insecure-key-for-dev'
     ALLOWED_HOSTS = []
 
-
-
-# Application definition
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'WARNING',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+    },
+}
 
 INSTALLED_APPS = [
     # 'django.contrib.admin',
@@ -36,6 +53,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'lists',
+    'accounts',
 ]
 
 MIDDLEWARE = [
@@ -79,6 +97,10 @@ DATABASES = {
     }
 }
 
+AUTH_USER_MODEL = 'accounts.User'
+AUTHENTICATION_BACKENDS = [
+    'accounts.authentication.PasswordlessAuthenticationBackend',
+]
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
@@ -118,3 +140,10 @@ USE_TZ = True
 
 STATIC_URL  = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
+
+# For sending emails
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST_USER = 'pruebaparatdd@gmail.com'
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_PASSWORD')
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
