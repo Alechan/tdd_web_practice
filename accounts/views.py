@@ -3,12 +3,12 @@ from django.contrib import messages, auth
 from django.core.mail import send_mail
 from django.shortcuts import redirect
 
-from accounts.models import Token
+from accounts import models
 
 
 def send_login_email(request):
     email = request.POST["email"]
-    url = Token.from_email(email, request)
+    url = models.get_uid_url_for_email(email, request)
     message_body = f'Use this link to log in:\n\n{url}'
     send_mail(
         'Your login link for Superlists',

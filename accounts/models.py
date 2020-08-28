@@ -19,9 +19,8 @@ class User(models.Model):
 
 
 class Token(models.Model):
-
-    email = models.EmailField()
-    uid   = models.CharField(default=uuid.uuid4, max_length=40)
+    email = models.EmailField(primary_key=True)
+    uid   = models.CharField(default=uuid.uuid4, max_length=40, unique=True)
 
     @classmethod
     def from_email(cls, email, request):
@@ -31,5 +30,10 @@ class Token(models.Model):
         )
         return url
 
-    class Meta:
-        unique_together = ('email', 'uid',)
+
+def get_uid_url_for_email(email, request):
+    token, _ = Token.objects.get_or_create(email=email)
+    url = request.build_absolute_uri(
+        reverse("login") + '?token=' + str(token.uid)
+    )
+    return url
