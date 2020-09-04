@@ -42,7 +42,6 @@ class MyListsTest(FunctionalTest):
         self.wait_for(
             lambda: self.browser.find_element_by_link_text('Reticulate splines')
         )
-        self.fail("BORRAME")
         self.wait_for(
             lambda: self.assertEqual(self.browser.current_url, first_list_url)
         )
