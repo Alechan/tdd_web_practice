@@ -6,6 +6,7 @@ from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.firefox.options import Options
 
 from .server_tools import reset_database
 
@@ -31,7 +32,7 @@ def wait(fn):
 
 class FunctionalTest(StaticLiveServerTestCase):
     def setUp(self):
-        self.browser = webdriver.Firefox()
+        self.browser = self.getNewBrowser()
         self.staging_server = os.environ.get('STAGING_SERVER')
         if self.staging_server:
             self.live_server_url = 'http://' + self.staging_server
@@ -52,6 +53,13 @@ class FunctionalTest(StaticLiveServerTestCase):
     def _test_has_failed(self):
         # slightly obscure but couldn't find a better way!
         return any(error for (method, error) in self._outcome.errors)
+
+    @staticmethod
+    def getNewBrowser():
+        options = Options()
+        options.headless = True
+        browser = webdriver.Firefox(options=options)
+        return browser
 
     def take_screenshot(self):
         filename = self._get_filename() + '.png'
