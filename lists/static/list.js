@@ -1,6 +1,17 @@
 window.Superlists = {};
+
 window.Superlists.initialize = function () {
-    $('input[name="text"]').on('keypress click', function () {
-        $('.has-error').hide();
-    });
+    const events_that_hide = ["click", "keypress"]
+    events_that_hide.forEach(event => hideErrorMessageOnEvent(event));
 };
+
+function hide_error_message() {
+    document.querySelectorAll('.has-error')[0].style.display = "none";
+}
+
+function hideErrorMessageOnEvent(event) {
+    document
+        .querySelectorAll('input[name="text"]')[0]
+        .addEventListener(event, hide_error_message);
+}
+

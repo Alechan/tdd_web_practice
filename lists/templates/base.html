@@ -86,9 +86,14 @@
   <script src="/static/list.js"></script>
 
   <script>
-      $(document).ready(function () {
-          window.Superlists.initialize();
-      });
+      function ready(fn) {
+          if (document.readyState !== 'loading'){
+              fn();
+          } else {
+              document.addEventListener('DOMContentLoaded', fn);
+          }
+      }
+      ready(window.Superlists.initialize);
   </script>
   </body>
 </html>
