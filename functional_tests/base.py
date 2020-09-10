@@ -34,7 +34,7 @@ def wait(fn):
 
 class FunctionalTest(StaticLiveServerTestCase):
     def setUp(self):
-        self.browser = self.getNewBrowser()
+        self.browser = self.get_new_browser()
         self.staging_server = os.environ.get('STAGING_SERVER')
         if self.staging_server:
             self.live_server_url = 'http://' + self.staging_server
@@ -57,7 +57,7 @@ class FunctionalTest(StaticLiveServerTestCase):
         return any(error for (method, error) in self._outcome.errors)
 
     @staticmethod
-    def getNewBrowser():
+    def get_new_browser():
         options = Options()
         options.headless = True
         browser = webdriver.Firefox(options=options)
