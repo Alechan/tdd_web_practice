@@ -1,12 +1,11 @@
 import unittest
-from unittest import skip
 from unittest.mock import patch, Mock
 
-import pytest
 from bs4 import BeautifulSoup
 from django.contrib.auth import get_user_model
 from django.http import HttpRequest
 from django.test import TestCase
+from django.urls import reverse
 from django.utils.html import escape
 
 from lists.forms import ExistingListItemForm, EMPTY_ITEM_ERROR, DUPLICATE_ITEM_ERROR, ItemForm
@@ -89,8 +88,6 @@ class ListViewTest(TestCase):
         self.assertEqual(Item.objects.all().count(), 1)
 
     def test_valid_share_form(self):
-        user = User.objects.create(email='a@b.com')
-        self.client.force_login(user)
         list_ = List.objects.create()
 
         response = self.client.get(f"/lists/{list_.id}/")
@@ -98,24 +95,36 @@ class ListViewTest(TestCase):
         html = response.content
         bs = BeautifulSoup(html, "html5lib")
         share_form = bs.find('form', {'id': 'form_share'})
+        share_list_url = reverse("share_list", args=(list_.id,))
 
         self.assertIsNotNone(share_form)
-        label = share_form.findChild("label")
+        self.assertEqual(share_form.get("method"), "POST")
+        self.assertEqual(share_form.get("action"), share_list_url)
+
+        self.assertFormContainsValidInput(share_form, input_id="sharee", input_type="email")
+        self.assertFormContainsValidSubmitButton(share_form)
+        self.assertFormContainsValidCSRFToken(share_form)
+
+    def assertFormContainsValidInput(self, form, input_id, input_type):
+        label = form.findChild("label")
         self.assertIsNotNone(label)
-        self.assertEqual(label.get("for"), "sharee")
+        self.assertEqual(label.get("for"), input_id)
         self.assertGreater(len(label.text), 0)
-        input_email = share_form.findChild("input", {"id": "sharee"})
+        input_email = form.findChild("input", {"id": input_id})
         self.assertIsNotNone(input_email)
-        self.assertEqual(input_email.get("type"), "email")
+        self.assertEqual(input_email.get("type"), input_type)
         self.assertEqual(input_email.get("placeholder"), "your-friend@example.com")
-        input_submit = share_form.findChild("input", {"type": "submit"})
+
+    def assertFormContainsValidSubmitButton(self, form):
+        input_submit = form.findChild("input", {"type": "submit"})
         self.assertIsNotNone(input_submit)
         self.assertGreater(len(input_submit.get("value")), 0)
-        input_csrf = share_form.findChild("input", {"name": "csrfmiddlewaretoken"})
+
+    def assertFormContainsValidCSRFToken(self, form):
+        input_csrf = form.findChild("input", {"name": "csrfmiddlewaretoken"})
         self.assertIsNotNone(input_csrf)
         self.assertEqual(input_csrf.get("type"), "hidden")
         self.assertGreater(len(input_csrf.get("value")), 20)
-
 
     def post_invalid_input(self):
         list_ = List.objects.create()
