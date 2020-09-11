@@ -5,7 +5,8 @@ from superlists import settings
 
 
 class List(models.Model):
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, null=True)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, null=True, related_name="owner")
+    shared_with = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name="shared_with")
 
     @property
     def name(self):

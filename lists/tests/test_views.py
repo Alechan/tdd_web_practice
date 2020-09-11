@@ -105,6 +105,10 @@ class ListViewTest(TestCase):
         self.assertFormContainsValidSubmitButton(share_form)
         self.assertFormContainsValidCSRFToken(share_form)
 
+    def test_shared_with_list_shows_people(self):
+        list_ = List.objects.create()
+
+
     def assertFormContainsValidInput(self, form, input_id, input_type):
         label = form.findChild("label")
         self.assertIsNotNone(label)
@@ -249,4 +253,24 @@ class NewListViewUnitTest(unittest.TestCase):
         mock_form.is_valid.return_value = False
         new_list(self.request)
         self.assertFalse(mock_form.save.called)
+
+
+class ShareListTest(TestCase):
+    def setUp(self):
+        self.request = HttpRequest()
+        self.request.POST['sharee'] = 'new list item'
+        self.request.user = Mock()
+
+    def test_post_redirects_to_lists_page(self):
+        sharee_email = 'share-recipient@example.com'
+        sharee = User.objects.create(email=sharee_email)
+        owner_email = 'a@b.com'
+        owner = User.objects.create(email=owner_email)
+        list_ = List.objects.create(owner=owner)
+        self.client.force_login(owner)
+
+        self.client.post(f'/lists/{list_.id}/share', data={'sharee': sharee_email})
+
+        self.assertIn(sharee, list_.shared_with.all())
+
 

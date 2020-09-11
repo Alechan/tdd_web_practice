@@ -66,7 +66,7 @@ class ListAndItemModelsTest(TestCase):
 
 class ListModelsTest(TestCase):
     def test_get_absolute_url(self):
-        list_ = List.objects.create()
+        list_ = List.create_new(first_item_text='new item text')
         self.assertEqual(list_.get_absolute_url(), f'/lists/{list_.id}/')
 
     def test_create_new_creates_list_and_first_item(self):
@@ -82,19 +82,27 @@ class ListModelsTest(TestCase):
         new_list = List.objects.first()
         self.assertEqual(new_list.owner, user)
 
-    def test_lists_can_have_owners(self):
-        try:
-            List(owner=User())
-        except TypeError:
-            self.fail("The list should allow owners")
-
-    def test_list_owner_is_optional(self):
+    def test_list_optional_fields(self):
         try:
             List().full_clean()
         except TypeError:
-            self.fail("The owner field should be optional")
+            self.fail("The optional fields should be optional")
 
     def test_create_returns_new_list_object(self):
         returned = List.create_new(first_item_text="holamanola")
         new_list = List.objects.first()
         self.assertEqual(returned, new_list)
+
+    def test_share_list_with_multiple_users(self):
+        owner    = User.objects.create(email='owner@a.com')
+        shared_1 = User.objects.create(email='shared_1@a.com')
+        shared_2 = User.objects.create(email='shared_2@a.com')
+        list_ = List.create_new(first_item_text="hellow man", owner=owner)
+
+        list_.shared_with.set([shared_1, shared_2])
+
+        all_users_shared_with = list_.shared_with.all()
+        self.assertEqual(len(all_users_shared_with), 2)
+        self.assertIn(shared_1, all_users_shared_with)
+        self.assertIn(shared_2, all_users_shared_with)
+
