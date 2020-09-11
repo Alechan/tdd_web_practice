@@ -3,6 +3,7 @@ from unittest import skip
 from unittest.mock import patch, Mock
 
 import pytest
+from bs4 import BeautifulSoup
 from django.contrib.auth import get_user_model
 from django.http import HttpRequest
 from django.test import TestCase
@@ -86,6 +87,35 @@ class ListViewTest(TestCase):
         self.assertContains(response, expected_error)
         self.assertTemplateUsed(response, "list.html")
         self.assertEqual(Item.objects.all().count(), 1)
+
+    def test_valid_share_form(self):
+        user = User.objects.create(email='a@b.com')
+        self.client.force_login(user)
+        list_ = List.objects.create()
+
+        response = self.client.get(f"/lists/{list_.id}/")
+
+        html = response.content
+        bs = BeautifulSoup(html, "html5lib")
+        share_form = bs.find('form', {'id': 'form_share'})
+
+        self.assertIsNotNone(share_form)
+        label = share_form.findChild("label")
+        self.assertIsNotNone(label)
+        self.assertEqual(label.get("for"), "sharee")
+        self.assertGreater(len(label.text), 0)
+        input_email = share_form.findChild("input", {"id": "sharee"})
+        self.assertIsNotNone(input_email)
+        self.assertEqual(input_email.get("type"), "email")
+        self.assertEqual(input_email.get("placeholder"), "your-friend@example.com")
+        input_submit = share_form.findChild("input", {"type": "submit"})
+        self.assertIsNotNone(input_submit)
+        self.assertGreater(len(input_submit.get("value")), 0)
+        input_csrf = share_form.findChild("input", {"name": "csrfmiddlewaretoken"})
+        self.assertIsNotNone(input_csrf)
+        self.assertEqual(input_csrf.get("type"), "hidden")
+        self.assertGreater(len(input_csrf.get("value")), 20)
+
 
     def post_invalid_input(self):
         list_ = List.objects.create()

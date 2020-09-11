@@ -15,7 +15,15 @@
 {% endblock %}
 
 {% block share_list_form %}
-    <label for="sharee">Share </label>
-    <input id="sharee" type="email" name="sharee" placeholder="your-friend@example.com">
-    <input type="submit" value="OK">
+    <form id="form_share" method="POST" action="{% url "share_list" list.id %}">
+        <label for="sharee">Share </label>
+        <input id="sharee" type="email" name="sharee" placeholder="your-friend@example.com">
+        <input type="submit" value="OK">
+        {% csrf_token %}
+        {% if form.errors %}
+            <div class="form-group has-error">
+                <div class="help-block">{{ form.text.errors }}</div>
+            </div>
+        {% endif %}
+    </form>
 {% endblock %}
