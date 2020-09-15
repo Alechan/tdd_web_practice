@@ -5,6 +5,9 @@
 {% block form_action %} {% url "view_list" list.id %} {% endblock %}
 
 {% block table %}
+    {% if user.is_authenticated and list.owner != user %}
+        <h2 id="id_list_owner">{{ list.owner.email}}'s list</h2>
+    {% endif %}
     <table id="id_list_table" class="table">
         {% for item in list.item_set.all %}
             <tr>
@@ -29,7 +32,7 @@
 {% endblock %}
 
 {% block shared_with_users %}
-    <table id="id_list_table" class="table">
+    <table class="table">
         {% for sharee in list.shared_with.all %}
             <tr>
                 <td class="list-sharee">{{ sharee.email }}</td>

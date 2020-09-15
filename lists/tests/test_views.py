@@ -113,12 +113,42 @@ class ListViewTest(DjangoTestCase):
         list_.shared_with.set([sharee_1, sharee_2])
 
         response = self.client.get(f"/lists/{list_.id}/")
+
         dom = self.get_DOM_for_response(response)
         shared_with_list = dom.select(".list-sharee")
         self.assertEqual(len(shared_with_list), 2)
         shared_with_list_emails = [e.text for e in shared_with_list]
         self.assertIn(sharee_1.email, shared_with_list_emails)
         self.assertIn(sharee_2.email, shared_with_list_emails)
+
+    def test_shows_owner_email_if_user_doesnt_own_list(self):
+        owner    = User.objects.create(email='owner@d.com')
+        list_ = List.create_new(first_item_text="1rst item", owner=owner)
+        sharee = User.objects.create(email='sharee-1@d.com')
+        list_.shared_with.add(sharee)
+        self.client.force_login(sharee)
+
+        response = self.client.get(f"/lists/{list_.id}/")
+
+        dom = self.get_DOM_for_response(response)
+        list_items_table = dom.find("table", {"id":"id_list_table"})
+        self.assertIsNotNone(list_items_table)
+        owner_heading = list_items_table.find_previous_sibling("h2")
+        self.assertIsNotNone(owner_heading)
+        self.assertEqual(owner_heading.text, f"{owner.email}'s list")
+        self.assertEqual(owner_heading.get("id"), "id_list_owner")
+
+    def test_doesnt_show_owner_email_if_user_owns_list(self):
+        owner    = User.objects.create(email='owner@d.com')
+        list_ = List.create_new(first_item_text="1rst item", owner=owner)
+
+        response = self.client.get(f"/lists/{list_.id}/")
+
+        dom = self.get_DOM_for_response(response)
+        list_items_table = dom.find("table", {"id":"id_list_table"})
+        self.assertIsNotNone(list_items_table)
+        owner_heading = list_items_table.find_previous_sibling("h2")
+        self.assertIsNone(owner_heading)
 
     def post_invalid_input(self):
         list_ = List.objects.create()
@@ -233,7 +263,7 @@ class MyListsTest(DjangoTestCase):
         dom = self.get_DOM_for_response(response)
         lists_h2 = dom.find("h2", text=heading_text)
         self.assertIsNotNone(lists_h2)
-        ul_items = lists_h2.find_next("ul")
+        ul_items = lists_h2.find_next_sibling("ul")
         self.assertIsNotNone(ul_items)
         lists_anchors = ul_items.find_all("a")
         self.assertEqual(len(lists_anchors), 2)
