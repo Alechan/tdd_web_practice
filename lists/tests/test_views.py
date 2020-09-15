@@ -200,29 +200,36 @@ class MyListsTest(DjangoTestCase):
         response = self.client.get('/lists/users/a@b.com/')
         self.assertEqual(response.context['owner'], correct_user)
 
-    def test_shows_correct_lists(self):
+    def test_shows_correct_personal_lists(self):
         owner = User.objects.create(email="owner@d.com")
         list_1 = List.create_new(first_item_text="1rst list", owner=owner)
         list_2 = List.create_new(first_item_text="2nd list", owner=owner)
         _ = List.create_new(first_item_text="irrelevant list")
+        lists = [list_1, list_2]
 
         response = self.client.get(f'/lists/users/{owner.email}/')
 
-        dom = self.get_DOM_for_response(response)
+        heading_text = f"{owner}'s lists"
 
-        def list_link_matcher(list_):
+        self.assertListCollectionIsValid(response, heading_text, lists)
+
+    def assertListCollectionIsValid(self, response, heading_text, lists):
+        dom = self.get_DOM_for_response(response)
+        lists_h2 = dom.find("h2", text=heading_text)
+        self.assertIsNotNone(lists_h2)
+        ul_items = lists_h2.find_next("ul")
+        self.assertIsNotNone(ul_items)
+        lists_anchors = ul_items.find_all("a")
+        self.assertEqual(len(lists_anchors), 2)
+
+        def list_anchor_matcher(list_):
             return lambda a: a.text == list_.item_set.first().text and a.get("href") == list_.get_absolute_url()
 
-        links_to_lists = dom.findAll("a", class_="list_link")
-        self.assertEqual(len(links_to_lists), 2)
-        self.assertExactlyOne(
-            list_link_matcher(list_1),
-            links_to_lists
-        )
-        self.assertExactlyOne(
-            list_link_matcher(list_2),
-            links_to_lists
-        )
+        for list_ in lists:
+            self.assertExactlyOne(
+                list_anchor_matcher(list_),
+                lists_anchors
+            )
 
     def assertExactlyOne(self, element_matcher, container):
         matches = list(filter(element_matcher, container))
