@@ -194,12 +194,6 @@ class MyListsTest(DjangoTestCase):
         response = self.client.get('/lists/users/a@b.com/')
         self.assertTemplateUsed(response, 'my_lists.html')
     
-    def test_passes_correct_owner_to_template(self):
-        User.objects.create(email='wrong@owner.com')
-        correct_user = User.objects.create(email='a@b.com')
-        response = self.client.get('/lists/users/a@b.com/')
-        self.assertEqual(response.context['owner'], correct_user)
-
     def test_shows_correct_personal_lists(self):
         owner = User.objects.create(email="owner@d.com")
         list_1 = List.create_new(first_item_text="1rst list", owner=owner)
@@ -209,9 +203,31 @@ class MyListsTest(DjangoTestCase):
 
         response = self.client.get(f'/lists/users/{owner.email}/')
 
-        heading_text = f"{owner}'s lists"
+        heading_text = f"{owner.email}'s lists"
 
         self.assertListCollectionIsValid(response, heading_text, lists)
+
+    def test_shows_correct_shared_with_lists(self):
+        _ = List.create_new(first_item_text="first item irrelevant list")
+        # Owner 1
+        owner_1 = User.objects.create(email="owner_1@d.com")
+        list_1 = List.create_new(first_item_text="first item owner 1 list", owner=owner_1)
+        # Owner 2
+        owner_2 = User.objects.create(email="owner_2@d.com")
+        list_2 = List.create_new(first_item_text="first item owner 2 list", owner=owner_2)
+        # Sharee
+        sharee = User.objects.create(email="sharee@d.com")
+        _ = List.create_new(first_item_text="first item sharee own list", owner=sharee)
+        list_1.shared_with.add(sharee)
+        list_2.shared_with.add(sharee)
+
+        shared_lists = [list_1, list_2]
+
+        response = self.client.get(f'/lists/users/{sharee.email}/')
+
+        heading_text = f"Lists shared to {sharee.email}"
+
+        self.assertListCollectionIsValid(response, heading_text, shared_lists)
 
     def assertListCollectionIsValid(self, response, heading_text, lists):
         dom = self.get_DOM_for_response(response)
@@ -225,9 +241,9 @@ class MyListsTest(DjangoTestCase):
         def list_anchor_matcher(list_):
             return lambda a: a.text == list_.item_set.first().text and a.get("href") == list_.get_absolute_url()
 
-        for list_ in lists:
+        for list__ in lists:
             self.assertExactlyOne(
-                list_anchor_matcher(list_),
+                list_anchor_matcher(list__),
                 lists_anchors
             )
 
