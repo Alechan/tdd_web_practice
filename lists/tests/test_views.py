@@ -1,21 +1,20 @@
 import unittest
 from unittest.mock import patch, Mock
 
-from bs4 import BeautifulSoup
 from django.contrib.auth import get_user_model
 from django.http import HttpRequest
-from django.test import TestCase
 from django.urls import reverse
 from django.utils.html import escape
 
 from lists.forms import ExistingListItemForm, EMPTY_ITEM_ERROR, DUPLICATE_ITEM_ERROR, ItemForm
 from lists.models import List, Item
+from lists.tests.base import DjangoTestCase
 from lists.views import new_list
 
 User = get_user_model()
 
 
-class HomePageTest(TestCase):
+class HomePageTest(DjangoTestCase):
 
     def test_uses_home_template(self):
         response = self.client.get('/')
@@ -26,7 +25,7 @@ class HomePageTest(TestCase):
         self.assertIsInstance(response.context["form"], ItemForm)
 
 
-class ListViewTest(TestCase):
+class ListViewTest(DjangoTestCase):
     def test_passes_correct_list_to_template(self):
         other_list = List.objects.create()
         correct_list = List.objects.create()
@@ -88,13 +87,13 @@ class ListViewTest(TestCase):
         self.assertEqual(Item.objects.all().count(), 1)
 
     def test_valid_share_form(self):
-        list_ = List.objects.create()
+        list_ = List.create_new(first_item_text="hello Manolow")
 
         response = self.client.get(f"/lists/{list_.id}/")
 
-        html = response.content
-        bs = BeautifulSoup(html, "html5lib")
-        share_form = bs.find('form', {'id': 'form_share'})
+        dom = self.get_DOM_for_response(response)
+
+        share_form = dom.find('form', {'id': 'form_share'})
         share_list_url = reverse("share_list", args=(list_.id,))
 
         self.assertIsNotNone(share_form)
@@ -105,30 +104,21 @@ class ListViewTest(TestCase):
         self.assertFormContainsValidSubmitButton(share_form)
         self.assertFormContainsValidCSRFToken(share_form)
 
-    def test_shared_with_list_shows_people(self):
-        list_ = List.objects.create()
+    def test_includes_shared_with_list(self):
+        owner    = User.objects.create(email='owner@d.com')
+        list_ = List.create_new(first_item_text="1rst item", owner=owner)
+        sharee_1 = User.objects.create(email='sharee-1@d.com')
+        sharee_2 = User.objects.create(email='sharee-2@d.com')
+        _        = User.objects.create(email='irrelevant@d.com')
+        list_.shared_with.set([sharee_1, sharee_2])
 
-
-    def assertFormContainsValidInput(self, form, input_id, input_type):
-        label = form.findChild("label")
-        self.assertIsNotNone(label)
-        self.assertEqual(label.get("for"), input_id)
-        self.assertGreater(len(label.text), 0)
-        input_email = form.findChild("input", {"id": input_id})
-        self.assertIsNotNone(input_email)
-        self.assertEqual(input_email.get("type"), input_type)
-        self.assertEqual(input_email.get("placeholder"), "your-friend@example.com")
-
-    def assertFormContainsValidSubmitButton(self, form):
-        input_submit = form.findChild("input", {"type": "submit"})
-        self.assertIsNotNone(input_submit)
-        self.assertGreater(len(input_submit.get("value")), 0)
-
-    def assertFormContainsValidCSRFToken(self, form):
-        input_csrf = form.findChild("input", {"name": "csrfmiddlewaretoken"})
-        self.assertIsNotNone(input_csrf)
-        self.assertEqual(input_csrf.get("type"), "hidden")
-        self.assertGreater(len(input_csrf.get("value")), 20)
+        response = self.client.get(f"/lists/{list_.id}/")
+        dom = self.get_DOM_for_response(response)
+        shared_with_list = dom.select(".list-sharee")
+        self.assertEqual(len(shared_with_list), 2)
+        shared_with_list_emails = [e.text for e in shared_with_list]
+        self.assertIn(sharee_1.email, shared_with_list_emails)
+        self.assertIn(sharee_2.email, shared_with_list_emails)
 
     def post_invalid_input(self):
         list_ = List.objects.create()
@@ -139,7 +129,7 @@ class ListViewTest(TestCase):
         return response
 
 
-class NewListViewIntegratedTest(TestCase):
+class NewListViewIntegratedTest(DjangoTestCase):
     def test_can_save_a_POST_request(self):
         self.client.post('/lists/new', data={'text': 'A new list item'})
         self.assertEqual(Item.objects.count(), 1)
@@ -198,7 +188,7 @@ class NewListViewIntegratedTest(TestCase):
         self.assertEqual(list_.owner, user)
 
 
-class MyListsTest(TestCase):
+class MyListsTest(DjangoTestCase):
     def test_my_lists_url_renders_my_lists_template(self):
         User.objects.create(email='a@b.com')
         response = self.client.get('/lists/users/a@b.com/')
@@ -209,6 +199,39 @@ class MyListsTest(TestCase):
         correct_user = User.objects.create(email='a@b.com')
         response = self.client.get('/lists/users/a@b.com/')
         self.assertEqual(response.context['owner'], correct_user)
+
+    def test_shows_correct_lists(self):
+        owner = User.objects.create(email="owner@d.com")
+        list_1 = List.create_new(first_item_text="1rst list", owner=owner)
+        list_2 = List.create_new(first_item_text="2nd list", owner=owner)
+        _ = List.create_new(first_item_text="irrelevant list")
+
+        response = self.client.get(f'/lists/users/{owner.email}/')
+
+        dom = self.get_DOM_for_response(response)
+
+        def list_link_matcher(list_):
+            return lambda a: a.text == list_.item_set.first().text and a.get("href") == list_.get_absolute_url()
+
+        links_to_lists = dom.findAll("a", class_="list_link")
+        self.assertEqual(len(links_to_lists), 2)
+        self.assertExactlyOne(
+            list_link_matcher(list_1),
+            links_to_lists
+        )
+        self.assertExactlyOne(
+            list_link_matcher(list_2),
+            links_to_lists
+        )
+
+    def assertExactlyOne(self, element_matcher, container):
+        matches = list(filter(element_matcher, container))
+        if len(matches) < 1:
+            self.fail(f"No element satisfied the matcher in {container}")
+        elif len(matches) > 2:
+            self.fail(f"More than one element ({matches}) satisfied the matcher in {container}")
+
+
 
 
 @patch('lists.views.NewListForm')
@@ -255,7 +278,7 @@ class NewListViewUnitTest(unittest.TestCase):
         self.assertFalse(mock_form.save.called)
 
 
-class ShareListTest(TestCase):
+class ShareListTest(DjangoTestCase):
     def setUp(self):
         self.request = HttpRequest()
         self.request.POST['sharee'] = 'new list item'

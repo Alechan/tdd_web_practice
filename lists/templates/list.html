@@ -27,3 +27,16 @@
         {% endif %}
     </form>
 {% endblock %}
+
+{% block shared_with_users %}
+    <table id="id_list_table" class="table">
+        {% for sharee in list.shared_with.all %}
+            <tr>
+                <td class="list-sharee">{{ sharee.email }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endblock %}
+
+
+
