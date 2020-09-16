@@ -17,30 +17,26 @@
     </table>
 {% endblock %}
 
-{% block share_list_form %}
-    <form id="form_share" method="POST" action="{% url "share_list" list.id %}">
-        <label for="sharee">Share </label>
-        <input id="sharee" type="email" name="sharee" placeholder="your-friend@example.com">
-        <input type="submit" value="OK">
-        {% csrf_token %}
-        {% if form.errors %}
-            <div class="form-group has-error">
-                <div class="help-block">{{ form.text.errors }}</div>
-            </div>
-        {% endif %}
-    </form>
+{% block extra_content %}
+    <div class="row">
+        {# Users shared with #}
+        <div class="col-md-6">
+            <h3 id="id_shared_with">Shared With</h3>
+            <ul>
+                {% for sharee in list.shared_with.all %}
+                    <li class="list-sharee">{{ sharee.email }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        {# Share this list form #}
+        <div class="col-md-6">
+            <form id="form_share" method="POST" action="{% url "share_list" list.id %}">
+                <h3><label for="sharee">Share </label></h3>
+                <input id="sharee" type="email" name="sharee" placeholder="your-friend@example.com">
+                <input type="submit" value="OK">
+                {% csrf_token %}
+            </form>
+        </div>
+    </div>
 {% endblock %}
-
-{% block shared_with_users %}
-    <h2 id="id_shared_with">Shared With</h2>
-    <table class="table">
-        {% for sharee in list.shared_with.all %}
-            <tr>
-                <td class="list-sharee">{{ sharee.email }}</td>
-            </tr>
-        {% endfor %}
-    </table>
-{% endblock %}
-
-
-

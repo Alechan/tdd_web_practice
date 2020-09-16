@@ -116,17 +116,17 @@ class ListViewTest(DjangoTestCase):
         response = self.client.get(f"/lists/{list_.id}/")
 
         dom = self.get_DOM_for_response(response)
-        heading_shared_with = dom.find("h2", {"id": "id_shared_with"})
+        heading_shared_with = dom.find("h3", {"id": "id_shared_with"})
         self.assertIsNotNone(heading_shared_with)
-        table_shared_with = heading_shared_with.find_next_sibling("table")
-        self.assertIsNotNone(table_shared_with)
-        rows_shared_with = table_shared_with.find_all("td")
-        self.assertEqual(len(rows_shared_with), 2)
+        ul_shared_with = heading_shared_with.find_next_sibling("ul")
+        self.assertIsNotNone(ul_shared_with)
+        bullets_shared_with = ul_shared_with.find_all("li")
+        self.assertEqual(len(bullets_shared_with), 2)
 
         for sharee in sharees:
             self.assertPredicateSatisfiesExactlyOne(
                 lambda td: td.text == sharee.email and "list-sharee" in td.get("class"),
-                rows_shared_with
+                bullets_shared_with
             )
 
     def test_shows_owner_email_if_user_doesnt_own_list(self):
