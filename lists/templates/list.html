@@ -6,7 +6,7 @@
 
 {% block table %}
     {% if user.is_authenticated and list.owner != user %}
-        <h2 id="id_list_owner">{{ list.owner.email}}'s list</h2>
+        <h2><span id="id_list_owner">{{ list.owner.email}}</span>'s list</h2>
     {% endif %}
     <table id="id_list_table" class="table">
         {% for item in list.item_set.all %}

@@ -144,7 +144,11 @@ class ListViewTest(DjangoTestCase):
         owner_heading = list_items_table.find_previous_sibling("h2")
         self.assertIsNotNone(owner_heading)
         self.assertEqual(owner_heading.text, f"{owner.email}'s list")
-        self.assertEqual(owner_heading.get("id"), "id_list_owner")
+        selector_owner_element = owner_heading.select("#id_list_owner")
+        self.assertIsNotNone(selector_owner_element)
+        self.assertEqual(len(selector_owner_element), 1)
+        owner_element = selector_owner_element[0]
+        self.assertEqual(owner_element.get("id"), "id_list_owner")
 
     def test_doesnt_show_owner_email_if_user_owns_list(self):
         owner    = User.objects.create(email='owner@d.com')
