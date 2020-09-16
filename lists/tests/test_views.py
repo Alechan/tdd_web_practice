@@ -106,20 +106,28 @@ class ListViewTest(DjangoTestCase):
 
     def test_includes_shared_with_list(self):
         owner    = User.objects.create(email='owner@d.com')
-        list_ = List.create_new(first_item_text="1rst item", owner=owner)
+        list_    = List.create_new(first_item_text="1rst item", owner=owner)
         sharee_1 = User.objects.create(email='sharee-1@d.com')
         sharee_2 = User.objects.create(email='sharee-2@d.com')
         _        = User.objects.create(email='irrelevant@d.com')
-        list_.shared_with.set([sharee_1, sharee_2])
+        sharees = [sharee_1, sharee_2]
+        list_.shared_with.set(sharees)
 
         response = self.client.get(f"/lists/{list_.id}/")
 
         dom = self.get_DOM_for_response(response)
-        shared_with_list = dom.select(".list-sharee")
-        self.assertEqual(len(shared_with_list), 2)
-        shared_with_list_emails = [e.text for e in shared_with_list]
-        self.assertIn(sharee_1.email, shared_with_list_emails)
-        self.assertIn(sharee_2.email, shared_with_list_emails)
+        heading_shared_with = dom.find("h2", {"id": "id_shared_with"})
+        self.assertIsNotNone(heading_shared_with)
+        table_shared_with = heading_shared_with.find_next_sibling("table")
+        self.assertIsNotNone(table_shared_with)
+        rows_shared_with = table_shared_with.find_all("td")
+        self.assertEqual(len(rows_shared_with), 2)
+
+        for sharee in sharees:
+            self.assertPredicateSatisfiesExactlyOne(
+                lambda td: td.text == sharee.email and "list-sharee" in td.get("class"),
+                rows_shared_with
+            )
 
     def test_shows_owner_email_if_user_doesnt_own_list(self):
         owner    = User.objects.create(email='owner@d.com')
@@ -268,23 +276,11 @@ class MyListsTest(DjangoTestCase):
         lists_anchors = ul_items.find_all("a")
         self.assertEqual(len(lists_anchors), 2)
 
-        def list_anchor_matcher(list_):
-            return lambda a: a.text == list_.item_set.first().text and a.get("href") == list_.get_absolute_url()
-
         for list__ in lists:
-            self.assertExactlyOne(
-                list_anchor_matcher(list__),
+            self.assertPredicateSatisfiesExactlyOne(
+                lambda a: a.text == list__.item_set.first().text and a.get("href") == list__.get_absolute_url(),
                 lists_anchors
             )
-
-    def assertExactlyOne(self, element_matcher, container):
-        matches = list(filter(element_matcher, container))
-        if len(matches) < 1:
-            self.fail(f"No element satisfied the matcher in {container}")
-        elif len(matches) > 2:
-            self.fail(f"More than one element ({matches}) satisfied the matcher in {container}")
-
-
 
 
 @patch('lists.views.NewListForm')

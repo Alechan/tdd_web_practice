@@ -32,6 +32,7 @@
 {% endblock %}
 
 {% block shared_with_users %}
+    <h2 id="id_shared_with">Shared With</h2>
     <table class="table">
         {% for sharee in list.shared_with.all %}
             <tr>

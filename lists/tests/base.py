@@ -29,3 +29,10 @@ class DjangoTestCase(TestCase):
         self.assertIsNotNone(input_csrf)
         self.assertEqual(input_csrf.get("type"), "hidden")
         self.assertGreater(len(input_csrf.get("value")), 20)
+
+    def assertPredicateSatisfiesExactlyOne(self, element_matcher, container):
+        matches = list(filter(element_matcher, container))
+        if len(matches) < 1:
+            self.fail(f"No element satisfied the matcher in {container}")
+        elif len(matches) > 2:
+            self.fail(f"More than one element ({matches}) satisfied the matcher in {container}")
