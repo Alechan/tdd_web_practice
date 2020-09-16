@@ -31,9 +31,12 @@ class Token(models.Model):
         return url
 
 
-def get_uid_url_for_email(email, request):
+def get_uid_url_for_email(email, request=None):
     token, _ = Token.objects.get_or_create(email=email)
-    url = request.build_absolute_uri(
-        reverse("login") + '?token=' + str(token.uid)
-    )
-    return url
+
+    relative_url = reverse("login") + '?token=' + str(token.uid)
+    if request:
+        url = request.build_absolute_uri(relative_url)
+        return url
+    else:
+        return relative_url
